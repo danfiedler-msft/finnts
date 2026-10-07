@@ -23,7 +23,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">finnts</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.6.0.9053</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0.9010</span>
       </span>
     </div>
 
@@ -137,7 +137,8 @@
 forecasts each individual time series one after another. 'local_machine'
 leverages all cores on current machine Finn is running on. 'spark'
 runs time series in parallel on a spark cluster in Azure Databricks or
-Azure Synapse.</p></dd>
+Azure Synapse. Parallel agent workflows require ellmer 0.4.0 or later on
+the main process and every worker.</p></dd>
 
 
 <dt id="arg-inner-parallel">inner_parallel<a class="anchor" aria-label="anchor" href="#arg-inner-parallel"></a></dt>
@@ -157,6 +158,36 @@ greater than number of cores on machine minus 1.</p></dd>
 <dd><p>Set seed for random number generator. Numeric value.</p></dd>
 
 </dl></div>
+    <div id="details">
+    <h2>Details</h2>
+    <p>Future quality is evaluated when <code><a href="final_models.html">final_models()</a></code> selects the winner
+within each iteration, including usable least-issues fallbacks with warnings.
+Parallel fallback warnings are relayed to the caller without saved fields.
+Iteration ranking starts from the earliest minimum
+WMAPE and may prefer a later eligible iteration within 10 percent relative
+WMAPE when its average model WMAPE is strictly lower. Local mean, median, and
+standard deviation summarize individual-model backtests, excluding simple
+averages. This retains evidence that a setting improves other models even if
+the current best model does not improve. Global summary fields retain their
+original meaning: run WMAPE for mean and median, and zero standard deviation.
+Agent comparisons and stopping use WMAPE rounded to four decimal places.
+Search-context selection does not overwrite a better saved local forecast.
+Global promotion applies to one complete iteration, and all saved global
+winners must reference that same iteration. Individual models and averages
+may differ within it. Mixed global iteration metadata is rejected before
+publication or update; interrupted writes are not treated as successful.
+Normal accuracy-goal stopping requires a complete eligible result and finite WMAPE, not another
+soft-quality check. A winner with soft concerns may therefore beat an earlier
+winner on accuracy. Loaded backtests, run history, and best-run metrics are reused without
+re-evaluating past future paths. Rejected evaluations still consume iteration
+budget without repeating the same fit as an infrastructure retry. If no
+eligible result exists, the workflow fails or an enabled local phase handles
+unresolved global series. Rankings are kept in memory, not new files.
+Hierarchical accuracy uses reconciled backtests; later comparisons and
+reconciliation do not require retained source-node quality rankings. Final
+reconciliation publishes the selected mixture without future-quality scoring,
+whole-set fallback, or extra refitting.</p>
+    </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
@@ -176,12 +207,12 @@ greater than number of cores on machine minus 1.</p></dd>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># set up LLM</span></span></span>
-<span class="r-in"><span><span class="va">driver_llm</span> <span class="op">&lt;-</span> <span class="fu">ellmer</span><span class="fu">::</span><span class="fu">chat_azure_openai</span><span class="op">(</span>model <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">llm</span> <span class="op">&lt;-</span> <span class="fu">ellmer</span><span class="fu">::</span><span class="fu">chat_azure_openai</span><span class="op">(</span>model <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># set up agent info</span></span></span>
 <span class="r-in"><span><span class="va">agent_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="set_agent_info.html">set_agent_info</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  project_info <span class="op">=</span> <span class="va">project</span>,</span></span>
-<span class="r-in"><span>  driver_llm <span class="op">=</span> <span class="va">driver_llm</span>,</span></span>
+<span class="r-in"><span>  llm <span class="op">=</span> <span class="va">llm</span>,</span></span>
 <span class="r-in"><span>  input_data <span class="op">=</span> <span class="va">hist_data</span>,</span></span>
 <span class="r-in"><span>  forecast_horizon <span class="op">=</span> <span class="fl">6</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
